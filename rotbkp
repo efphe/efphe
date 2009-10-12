@@ -1,10 +1,153 @@
 #!/usr/bin/python
 from optparse import OptionParser
+import os, sys, stat
+import datetime
 
-_op= OptionParser()
-_op.add_option('-d', '--dstdir', dest= 'dstdir', help= 'Directory Containing Rotating Bakups', metavar= 'DIR')
-_op.add_option('-q', '--quiet', dest= 'quiet', help= 'Be Quiet', default= False)
+_today= datetime.datetime.today()
+_todaystr= '%d/%d/%d' % (_today.day, _today.month, _today.year)
 
+class RotBkpParser(OptionParser):
 
-def rotbpk():
-  print 'ciao'
+  def _dbg(self, s):
+    if not self.quiet: return
+    print s
+
+  def unlink(self, s, goon= 0, dontprint= False):
+    if not dontprint:
+      self._dbg('Unlinking %s' % s)
+    try:
+      os.unlink(s)
+    except Exception, ss:
+      if not goon:
+        print 'Error: %s', str(ss)
+        sys.exit(1)
+
+  def mv(self, s, t):
+    self._dbg('Moving: %s -> %s' % (s,t))
+    self.unlink(t, goon= 1, dontprint= 1)
+    res= os.system('mv %s %s' % (s, t))
+    try:
+      assert res == 0
+    except: 
+      print 'Error: can\'t move %s -> %s' % (s,t)
+      sys.exit(1)
+
+  def cp(self, s, t):
+    self._dbg('Cpying: %s -> %s' % (s,t))
+    res= os.system('cp %s %s' % (s, t))
+    try:
+      assert res == 0
+    except: 
+      print 'Error: can\'t cp %s -> %s' % (s,t)
+      sys.exit(1)
+
+  def set_options(self, opts, args):
+    for opt in self.option_list:
+      if opt.dest:
+        setattr(self, opt.dest, getattr(opts, opt.dest))
+    self.userargs= args
+    self.set_today()
+
+  def get_bkp_dir(self):
+    try:
+      return self.dstdir
+    except: return ''
+
+  def _get_bkp_dir(self, general= 0, monthly= 0, yearly= 0):
+    if general:
+      return self.dstdir
+    if monthly:
+      return self.dstdir + '/monthly'
+    if yearly:
+      return self.dstdir + '/yearly'
+    return 1/0
+
+  def _build_dirs(self):
+    for i in self._get_bkp_dir(1), self._get_bkp_dir(monthly= 1), self._get_bkp_dir(yearly= 1):
+      try: os.stat(i)
+      except: 
+        print 'mkdir %s' % i
+        os.mkdir(i)
+
+  def today_file(self):
+    return '%s/%d.bkp' % (self._get_bkp_dir(1), self.today.day % self.days)
+
+  def today_month_file(self):
+    d= self._get_bkp_dir(monthly= 1)
+    return '%s/%d-%d.bkp' % (d, self.today.year, self.today.month)
+
+  def today_year_file(self):
+    d= self._get_bkp_dir(yearly= 1)
+    return '%s/%d.bkp' % (d, self.today.year)
+
+  def del_last_n(self, dir, n):
+    elems= os.listdir(dir)
+    if not len(elems) > n: return
+
+    res= []
+    for elem in elems:
+      when= os.stat('%s/%s' % (dir, elem))[stat.ST_CTIME]
+      res.append( (when, elem))
+    res.sort()
+
+    for i in xrange(len(elems) - n):
+      self.unlink('%s/%s' % (dir, res[i][1]))
+
+  def set_today(self):
+    stoday= getattr(self, 'stoday', None)
+    if not stoday:
+      self.today= _today
+    else:
+      try:
+        d,m,y= map(int, stoday.split('/'))
+        self.today= datetime.datetime( y,m,d )
+      except Exception, ss:
+        print 'Invalid Date: %s' % str(stoday)
+        print 'Use European Date Format: %d/%m/%Y'
+        sys.exit(1)
+
+  def rotbkp(self):
+    self._build_dirs()
+    tfile= self.today_file()
+    self.cp(self.userargs[0], tfile)
+
+    if self.today.day <> 1:
+      return 
+
+    if self.today.month == 1:
+      yfile= self.today_year_file()
+      self.mv(tfile, yfile)
+    else:
+      mfile= self.today_month_file()
+      self.mv(tfile, mfile)
+
+    self.del_last_n(self._get_bkp_dir(monthly= 1), self.months)
+    self.del_last_n(self._get_bkp_dir(yearly= 1), self.years)
+
+_op= RotBkpParser(usage= 'usage: %prog [options] -b backup-dir file\n  Note: -b option is mandatory')
+_op.add_option('-b', '--bkpdir', dest= 'dstdir', help= 'Directory Containing Rotating Bakups', metavar= 'backup-dir')
+_op.add_option('-q', '--quiet', dest= 'quiet', help= 'Be Quiet', default= True, action= 'store_false')
+_op.add_option('-d', '--days', dest= 'days', help= 'How Many Daily Backup', default= 7, type= 'int', metavar= 'days')
+_op.add_option('-m','--months', dest= 'months', help= 'How Many Monthly Backup', default= 12, type= 'int', metavar= 'months')
+_op.add_option('-y', '--years', dest= 'years', help= 'How Many Yearly Backup', default= 3, type= 'int', metavar= 'years')
+_op.add_option('-t', '--forceday', dest= 'stoday', help= 'Force `Today` to...', default= _todaystr, metavar= '%d/%m/%Y')
+_op.add_option('-x', '--test', dest= 'xxx', help= 'Test Rotation for N days', default= 0, metavar= 'N', type= 'int')
+_op.add_option('-r', '--rm', dest= 'rm', help= 'Remove Original File', default= False, action= 'store_true')
+
+def rotbkp():
+  options, args = _op.parse_args()
+  if not options.dstdir or len(args) <> 1:
+    _op.print_help()
+    sys.exit(1)
+  _op.set_options(options, args)
+
+  if _op.xxx:
+    for i in xrange(_op.xxx):
+      d= _today + datetime.timedelta(i)
+      _op.today= d
+      _op.rotbkp()
+
+  _op.rotbkp()
+
+if __name__ == '__main__':
+  rotbkp()
