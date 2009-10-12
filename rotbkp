@@ -1,0 +1,10 @@
+#!/usr/bin/python
+from optparse import OptionParser
+
+_op= OptionParser()
+_op.add_option('-d', '--dstdir', dest= 'dstdir', help= 'Directory Containing Rotating Bakups', metavar= 'DIR')
+_op.add_option('-q', '--quiet', dest= 'quiet', help= 'Be Quiet', default= False)
+
+
+def rotbpk():
+  print 'ciao'
