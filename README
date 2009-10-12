@@ -1,0 +1,9 @@
+
+ * Rotbkp, Backup Rotation
+
+ Rotbkp is a python script used to maintain frequent backups.
+ When you often need to backup something (for example daily)
+ the problem to maintain data arises.
+
+ With Rotbkp, you can rotate your backups, maintaining N
+ daily backups, N monthly backups and N yearly backups
