@@ -124,6 +124,10 @@ class RotBkpParser(OptionParser):
     self.del_last_n(self._get_bkp_dir(monthly= 1), self.months)
     self.del_last_n(self._get_bkp_dir(yearly= 1), self.years)
 
+  def maybe_delete_orig(self):
+    if self.rm:
+      self.unlink(self.userargs[0])
+
 _op= RotBkpParser(usage= 'usage: %prog [options] -b backup-dir file\n  Note: -b option is mandatory')
 _op.add_option('-b', '--bkpdir', dest= 'dstdir', help= 'Directory Containing Rotating Bakups', metavar= 'backup-dir')
 _op.add_option('-q', '--quiet', dest= 'quiet', help= 'Be Quiet', default= True, action= 'store_false')
@@ -146,8 +150,9 @@ def rotbkp():
       d= _today + datetime.timedelta(i)
       _op.today= d
       _op.rotbkp()
-
-  _op.rotbkp()
+  else:
+    _op.rotbkp()
+    _op.maybe_delete_orig()
 
 if __name__ == '__main__':
   rotbkp()
