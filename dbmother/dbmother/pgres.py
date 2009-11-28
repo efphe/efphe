@@ -2,7 +2,7 @@
 import logging
 import psycopg2
 from dbmother.modb import IMotherDb
-from dbmother.mocoms import YELLOW
+from dbmother.mocoms import YELLOW, GREEN
 
 class DbIface(IMotherDb):
 
@@ -24,6 +24,7 @@ class DbIface(IMotherDb):
     self.connection.close()
 
   def _execute(self, q, d):
+    logging.debug(GREEN(self.session_name) + ': '+ YELLOW(self.cursor.mogrify(q,d)))
     d= d or None
     self.cursor.execute(q, d)
 
@@ -43,12 +44,10 @@ class DbIface(IMotherDb):
     return res
 
   def _gquery(self, q, d):
-    logging.debug(YELLOW(self.cursor.mogrify(q,d)))
     self._execute(q, d)
     return self._extract()
 
   def _qquery(self, q, d):
-    logging.debug(YELLOW(self.cursor.mogrify(q,d)))
     self._execute(q, d)
 
   def _mqquery(self, q, l):
@@ -61,8 +60,6 @@ class DbIface(IMotherDb):
   def insert(self, sql, d, tbl):
     if self.withOid:
       self.oc_query(sql, d)
-      import pdb
-      pdb.set_trace()
       lastoid= self.cursor.lastrowid
       _id= self.ov_query('select id from %s where oid = %d ' % (tbl, lastoid))
       d= {'id': _id}

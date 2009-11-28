@@ -6,6 +6,7 @@ class IMotherDb:
     self.session_name= name
 
   def endSession(self):
+    self.commit()
     self.pooling.putDb(self)
 
   def oc_query(self, s, filter= None):

@@ -91,11 +91,10 @@ class MommaRoot:
 
 try:
   from twisted.spread import pb
-  import twisted.internet.app
-  class MommaRootPb(MommaRoot):
+  class MommaRootPb(pb.Root):
     def __init__(self):
       self.sessionMap= {}
-      MommaRoot.__init__(self)
+      self.pooling= Momma.pooling
     def remote_get_session(self, name= None):
       ses= self.pooling.getDb(name)
       tok= PerfectSleeper.release_time()
@@ -121,7 +120,7 @@ try:
       pass
 
   class MotherSessionPb:
-    def __init__(self, name):
+    def __init__(self, name= None):
       self.name= name
       self.tok= self.server.callRemote('get_session', name)
     def oc_query(self, q, d):
@@ -136,22 +135,37 @@ try:
     def mr_query(self, q, d):
       tok= self.tok
       return self.server.callRemote('mr_query', tok, q, d)
+except: pass
 
-
-Momma= MommaRoot()
-
-def init_mother(fmap, ptype, plimit, dbtype, *a, **kw):
-  Momma.init_momap(fmap)
-  Momma.init_mother_pooling(ptype, plimit, dbtype, *a, **kw)
 
 def MotherSession(name= None, remote= False):
-  if not remote:
+  if 1 or not remote:
     pooling= Momma.pooling
     return pooling.getDb(name)
   return MotherSessionPb(name)
 
-def MotherSessionRemote(name= None):
-  return MotherSession(name, 1)
+Momma= MommaRoot()
+#MotherSession= MotherSessionGen
+
+#def init_mother(ptype, plimit, dbtype, async, *a, **kw):
+  #Momma.init_mother_pooling(ptype, plimit, dbtype, *a, **kw)
+  #def _fses(name): 
+    #if async:
+      #return MotherSessionGen(name, 1)
+    #return MotherSessionGen(name)
+  #global MotherSession
+  #MotherSession= _fses
+
+class MotherInitializer:
+  def init_db(self, ptype, plimit, dbtype, *a, **kw):
+    Momma.init_mother_pooling(ptype, plimit, dbtype, *a, **kw)
+  def run_async(self, host= 'localhost', port= 91823):
+    from twisted.spread import pb
+    from twisted.internet import reactor
+    serverfactory = pb.PBServerFactory(MommaRootPb())
+    reactor.listenTCP(port, serverfactory)
+    reactor.run()
+
 
 class DbMother:
   def __init__(self, store, flag= MO_NOA, session= None, tbl= None):
