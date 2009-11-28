@@ -171,16 +171,16 @@ class DbMother:
     ses= self.session
     store= self.store
     store.update(d)
-    _setvalues= self._updict(store)
-    sql= 'UPDATE %s set %s where id = %d' % (self.tableName, _setvalues, store['id'])
+    vls= self._updict(store)
+    sql= 'UPDATE %s set %s where id = %d' % (self.tableName, vls, store['id'])
     ses.oc_query(sql, store)
 
   def insert(self, d= {}):
     ses= self.session
     store= self.store
     store.update(d)
-    _vl, vlvl= self._insict(store)
-    sql= 'INSERT INTO %s (%s) VALUES (%s)' % (self.tableName, _vl, vlvl)
+    _vl, _vlv= self._insict(store)
+    sql= 'INSERT INTO %s (%s) VALUES (%s)' % (self.tableName, _vl, _vlv)
     d= ses.insert(sql, store, self.tableName)
     store.update(d)
 
