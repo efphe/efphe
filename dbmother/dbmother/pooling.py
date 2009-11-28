@@ -1,6 +1,7 @@
 from Queue import Queue
 from threading import Lock
 from random import randint
+import logging
 
 POOLTYPE_ELASTIC= 1
 POOLTYPE_GROWING= 2
@@ -87,11 +88,14 @@ class MotherPooling(Queue):
   def putDb(self, db):
     self.mpoolingLock.acquire()
     try:
+      logging.debug('emptying dbemployed...')
       self.dbemployed.remove(db)
     except: pass
-    if self.poolType != POOLTYPE_ELASTIC or self.dbifaces == self.poolLimit:
+    if self.poolType != POOLTYPE_ELASTIC or self.dbifaces < self.poolLimit:
+      logging.debug('session back home...')
       self.put(db)
     else:
+      logging.debug('discarding session...')
       try:
         db.close()
       except: pass

@@ -1,3 +1,5 @@
+from dbmother.mocoms import GREEN
+import logging
 class IMotherDb:
 
   def set_name(self, name, pooling):
@@ -6,6 +8,7 @@ class IMotherDb:
     self.session_name= name
 
   def endSession(self):
+    logging.debug(GREEN('Committing Session: %s' % self.session_name))
     self.commit()
     self.pooling.putDb(self)
 

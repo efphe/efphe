@@ -17,6 +17,7 @@ class DbIface(IMotherDb):
     self.cursor= self.connection.cursor()
 
   def rollback(self):
+    logging.info(RED('Rollbacking Session: %s' % self.session_name))
     self.connection.rollback()
   def commit(self):
     self.connection.commit()
