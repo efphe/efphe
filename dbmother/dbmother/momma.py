@@ -17,7 +17,7 @@ class MoMap:
     self._map_rels= map_dicts['R']
     fil.close()
 
-class Momma:
+class MommaRoot:
   def __init__(self):
     self._motherversion = 1
     self.momap= None
@@ -35,21 +35,21 @@ class Momma:
     MotherPooling._dbClass= DbIface
     MotherPooling._dbArgs= args
     MotherPooling._dbKwargs= kwargs
-    MommaMomma.pooling= MotherPooling(0,0,0)
+    Momma.pooling= MotherPooling(0,0,0)
 
   def init_momap(self, fmap):
     try:
       self.momap= MoMap(fmap)
     except: pass
 
-MommaMomma= Momma()
+Momma= MommaRoot()
 
 def init_mother(fmap, ptype, plimit, dbtype, *a, **kw):
-  MommaMomma.init_momap(fmap)
-  MommaMomma.init_mother_pooling(ptype, plimit, dbtype, *a, **kw)
+  Momma.init_momap(fmap)
+  Momma.init_mother_pooling(ptype, plimit, dbtype, *a, **kw)
 
 def MotherSession(name= None):
-  pooling= MommaMomma.pooling
+  pooling= Momma.pooling
   return pooling.getDb(name)
 
 class DbMother:

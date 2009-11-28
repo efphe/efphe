@@ -1,8 +1,13 @@
 _commajoin= ','.join
 class IMotherDb:
 
-  def set_name(self, name):
+  def set_name(self, name, pooling):
+    if not hasattr(self, 'pooling'):
+      self.pooling= pooling
     self.session_name= name
+
+  def endSession(self):
+    self.pooling.putDb(self)
 
   def oc_query(self, s, filter= None):
     self._qquery(s, filter)

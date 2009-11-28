@@ -48,7 +48,7 @@ class MotherPooling(Queue):
 
   def getDb(self, name= None):
     db= self._getDb()
-    db.set_name(name or 'MotherSession-%d' % randint(1, 12345))
+    db.set_name(name or 'MotherSession-%d' % randint(1, 12345), self)
     return db
 
   def _getDb(self):
