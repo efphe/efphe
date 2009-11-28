@@ -114,6 +114,12 @@ try:
     def remote_ov_query(self, tok, q, d= None):
       ses= self.sessionMap[tok]
       return ses.ov_query(q, d)
+    def remote_endSession(self, tok):
+      pass
+    def remote_rollback(self, tok):
+      pass
+    def remote_commit(self, tok):
+      pass
 
   class MotherSessionPb:
     def __init__(self, name):
