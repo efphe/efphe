@@ -1,4 +1,6 @@
+_commajoin= ','.join
 from dbmother.pooling import *
+from time import time
 MO_NOA    = 0     # No Action
 MO_DEL    = 1     # Del Action
 MO_UP     = 2     # Update Action
@@ -6,16 +8,13 @@ MO_SAVE   = 3     # Save Action
 MO_LOAD   = 4     # Load Action
 
 class PerfectSleeper:
-  lastrelase= '0.01'
-  @staticmethod
-  def _release_time():
-    t= '%.4f' % time.time()
-    while t == PerfectSleeper.lastrelase:
-      t= '%.4f' % time.time()
-    PerfectSleeper.lastrelase= t
+  lastrelase= '0.1234'
   @staticmethod
   def release_time():
-    PerfectSleeper._release_time()
+    t= '%.4f' % time()
+    while t == PerfectSleeper.lastrelase:
+      t= '%.4f' % time()
+    PerfectSleeper.lastrelase= t
 
 class MommaSql:
   argFrmt= None

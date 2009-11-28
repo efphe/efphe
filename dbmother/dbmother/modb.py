@@ -1,4 +1,3 @@
-_commajoin= ','.join
 class IMotherDb:
 
   def set_name(self, name, pooling):
