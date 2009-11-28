@@ -8,7 +8,7 @@ MO_SAVE   = 3     # Save Action
 MO_LOAD   = 4     # Load Action
 
 class PerfectSleeper:
-  lastrelase= '0.1234'
+  lastrelase= None
   @staticmethod
   def release_time():
     t= '%.4f' % time()
@@ -144,9 +144,14 @@ def init_mother(fmap, ptype, plimit, dbtype, *a, **kw):
   Momma.init_momap(fmap)
   Momma.init_mother_pooling(ptype, plimit, dbtype, *a, **kw)
 
-def MotherSession(name= None):
-  pooling= Momma.pooling
-  return pooling.getDb(name)
+def MotherSession(name= None, remote= False):
+  if not remote:
+    pooling= Momma.pooling
+    return pooling.getDb(name)
+  return MotherSessionPb(name)
+
+def MotherSessionRemote(name= None):
+  return MotherSession(name, 1)
 
 class DbMother:
   def __init__(self, store, flag= MO_NOA, session= None, tbl= None):
