@@ -6,7 +6,6 @@ from dbmother.mocoms import YELLOW
 
 class DbIface(IMotherDb):
 
-  argFrmt= '%%(%s)s'
   withOid= 1
 
   def __init__(self, user, pwd, dbname, host= None, port= 5432):
