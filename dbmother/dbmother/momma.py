@@ -80,13 +80,14 @@ def MotherSession(name= None):
   return pooling.getDb(name)
 
 class WMotherSession(object):
-  def __init__(self, name= None):
+  def __init__(self, name= None, ret= -1):
     self.name= name
     self.session= None
+    self.ret= ret
   def __enter__(self):
     ses= MotherSession(self.name)
     self.session= ses
-    return ses
+    return ses, self.ret
   def __exit__(self, type, value, traceback):
     self.session.endSession(type)
     return False
