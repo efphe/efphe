@@ -1,4 +1,4 @@
-from dbmother.mocoms import GREEN
+from dbmother.mocoms import GREEN, RED
 import logging
 class IMotherDb:
 
@@ -7,9 +7,13 @@ class IMotherDb:
       self.pooling= pooling
     self.session_name= name
 
-  def endSession(self):
-    logging.debug(GREEN('Committing Session: %s' % self.session_name))
-    self.commit()
+  def endSession(self, rback= False):
+    if not rback:
+      logging.debug(GREEN('Committing Session: %s' % self.session_name))
+      self.commit()
+    else:
+      logging.debug(RED('Rollbacking Session: %s' % self.session_name))
+      self.rollback()
     self.pooling.putDb(self)
 
   def oc_query(self, s, filter= None):
