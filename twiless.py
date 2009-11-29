@@ -3,6 +3,12 @@ import stackless
 from twisted.internet import defer
 _stackless_thread_channel= stackless.channel()
 
+""" This module allows to run normal code suites as deferred objects,
+    without creating expensive threads, but using stackless.
+
+    There is a limit: deferred suites are FIFO'ed and not concurrent
+"""
+
 def _underground(d, f, *a, **kw):
   """ This function runs f() on stackless, making sure that,
       when done, the deferred d will call back."""
