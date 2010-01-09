@@ -4,6 +4,12 @@
 # Author: Federico Tomassini, aka efphe
 #   Thanks to: http://wubook.net/, http://en.wubook.net/
 
+# *** How To Use ***
+#
+#    Simply put this file on your PATH. Run it as:
+#
+#        lnkshrt.py `url`
+
 import urllib as _
 import sys as __
 
