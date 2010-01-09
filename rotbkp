@@ -1,4 +1,7 @@
 #!/usr/bin/python
+# LIcense: do what you want.
+# Thanks to http://wubook.net/ http://en.wubook.net/
+# Author: Federico Tomassini aka efphe
 from optparse import OptionParser
 import os, sys, stat
 import datetime
