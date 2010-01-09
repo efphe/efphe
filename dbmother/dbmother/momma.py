@@ -1,20 +1,5 @@
 _commajoin= ','.join
 from dbmother.pooling import *
-from time import time
-MO_NOA    = 0     # No Action
-MO_DEL    = 1     # Del Action
-MO_UP     = 2     # Update Action
-MO_SAVE   = 3     # Save Action
-MO_LOAD   = 4     # Load Action
-
-class PerfectSleeper:
-  lastrelase= None
-  @staticmethod
-  def release_time():
-    t= '%.4f' % time()
-    while t == PerfectSleeper.lastrelase:
-      t= '%.4f' % time()
-    PerfectSleeper.lastrelase= t
 
 class MommaSql:
   argFrmt= None
@@ -31,7 +16,7 @@ class MommaSql:
     return _commajoin(sl)
 
   def _selict(self, d, f):
-    sl= self._equalKeys(d)
+    sl= self._equalKeys(d, skipid= 0)
     what= f and _commajoin(f) or '*'
     return what, _commajoin(sl)
 
@@ -89,88 +74,31 @@ class MommaRoot:
       self.momap= MoMap(fmap)
     except: pass
 
-try:
-  from twisted.spread import pb
-  class MommaRootPb(pb.Root):
-    def __init__(self):
-      self.sessionMap= {}
-      self.pooling= Momma.pooling
-    def remote_get_session(self, name= None):
-      ses= self.pooling.getDb(name)
-      tok= PerfectSleeper.release_time()
-      self.sessionMap[tok]= ses
-      return tok
-    def remote_oc_query(self, tok, q, d= None):
-      ses= self.sessionMap[tok]
-      return ses.oc_query(q, d)
-    def remote_or_query(self, tok, q, d= None):
-      ses= self.sessionMap[tok]
-      return ses.or_query(q, d)
-    def remote_mr_query(self, tok, q, d= None):
-      ses= self.sessionMap[tok]
-      return ses.mr_query(q, d)
-    def remote_ov_query(self, tok, q, d= None):
-      ses= self.sessionMap[tok]
-      return ses.ov_query(q, d)
-    def remote_endSession(self, tok):
-      pass
-    def remote_rollback(self, tok):
-      pass
-    def remote_commit(self, tok):
-      pass
-
-  class MotherSessionPb:
-    def __init__(self, name= None):
-      self.name= name
-      self.tok= self.server.callRemote('get_session', name)
-    def oc_query(self, q, d):
-      tok= self.tok
-      return self.server.callRemote('oc_query', tok, q, d)
-    def ov_query(self, q, d):
-      tok= self.tok
-      return self.server.callRemote('ov_query', tok, q, d)
-    def or_query(self, q, d):
-      tok= self.tok
-      return self.server.callRemote('or_query', tok, q, d)
-    def mr_query(self, q, d):
-      tok= self.tok
-      return self.server.callRemote('mr_query', tok, q, d)
-except: pass
-
-
-def MotherSession(name= None, remote= False):
-  if 1 or not remote:
-    pooling= Momma.pooling
-    return pooling.getDb(name)
-  return MotherSessionPb(name)
-
 Momma= MommaRoot()
-#MotherSession= MotherSessionGen
+def MotherSession(name= None):
+  pooling= Momma.pooling
+  return pooling.getDb(name)
 
-#def init_mother(ptype, plimit, dbtype, async, *a, **kw):
-  #Momma.init_mother_pooling(ptype, plimit, dbtype, *a, **kw)
-  #def _fses(name): 
-    #if async:
-      #return MotherSessionGen(name, 1)
-    #return MotherSessionGen(name)
-  #global MotherSession
-  #MotherSession= _fses
+class WMotherSession(object):
+  def __init__(self, name= None, ret= -1):
+    self.name= name
+    self.session= None
+    self.ret= ret
+  def __enter__(self):
+    ses= MotherSession(self.name)
+    self.session= ses
+    return ses, self.ret
+  def __exit__(self, type, value, traceback):
+    self.session.endSession(type)
+    return False
 
 class MotherInitializer:
   def init_db(self, ptype, plimit, dbtype, *a, **kw):
     Momma.init_mother_pooling(ptype, plimit, dbtype, *a, **kw)
-  def run_async(self, host= 'localhost', port= 91823):
-    from twisted.spread import pb
-    from twisted.internet import reactor
-    serverfactory = pb.PBServerFactory(MommaRootPb())
-    reactor.listenTCP(port, serverfactory)
-    reactor.run()
 
-
-class DbMother:
-  def __init__(self, store, flag= MO_NOA, session= None, tbl= None):
-    if tbl:
-      self.tableName= tbl
+class DbMother(MommaSql):
+  def __init__(self, session, tbl, store= {}):
+    self.tableName= tbl
     self.store= store
     self.session= session
     self.moved= []
@@ -193,6 +121,7 @@ class DbMother:
     vls= self._updict(store)
     sql= 'UPDATE %s set %s where id = %d' % (self.tableName, vls, store['id'])
     ses.oc_query(sql, store)
+    return self
 
   def insert(self, d= {}):
     ses= self.session
@@ -202,15 +131,23 @@ class DbMother:
     sql= 'INSERT INTO %s (%s) VALUES (%s)' % (self.tableName, _vl, _vlv)
     d= ses.insert(sql, store, self.tableName)
     store.update(d)
+    return self
 
-  def load(self, d= {}, fields= []):
+  def load(self, d= {}, fields= [], safe= False):
     ses= self.session
     store= self.store
     store.update(d)
     what, ftr= self._selict(store, fields)
     sql= 'select %s from %s where %s' % (what, self.tableName, ftr)
-    d= ses.or_query(sql, store)
-    store.update(d)
+    if safe:
+      dd= ses.mr_query(sql, store)
+      assert len(dd) < 2
+      if dd: dd= dd[0]
+      else: dd= {}
+    else:
+      dd= ses.or_query(sql, store)
+    store.update(dd)
+    return self
 
   def delete(self, d= {}):
     ses= self.session
@@ -219,4 +156,5 @@ class DbMother:
     ftr= self._delict(store)
     sql= 'delete from %s where %s' % (self.tableName, ftr)
     ses.oc_query(sql, store)
+    return self
 
